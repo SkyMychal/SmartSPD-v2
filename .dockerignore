@@ -1,0 +1,89 @@
+# Docker ignore file for SmartSPD v2
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+DEPLOYMENT.md
+ENHANCED_RAG_README.md
+PRODUCTION_README.md
+Product_Requirements_Document_(PRD)_SmartSPD.pdf
+
+# Environment files
+.env*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+target/
+
+# Test coverage
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+
+# Backups
+backups/
+*.backup
+*.sql
+
+# Docker
+docker-compose.override.yml
+Dockerfile.dev
+
+# Scripts (production deployment only)
+scripts/
+start_development.sh
+
+# Development artifacts
+*.zip
+*.tar.gz
+uploads/
+.pytest_cache/
