@@ -4,6 +4,8 @@ services:
   # Database
   postgres:
     image: postgres:15
+    env_file:
+      - .env.prod
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-smartspd}
       POSTGRES_USER: ${POSTGRES_USER:-smartspd_user}
@@ -34,6 +36,8 @@ services:
   # Cache
   redis:
     image: redis:7-alpine
+    env_file:
+      - .env.prod
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -96,11 +100,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-smartspd_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-smartspd}
+      DATABASE_URL: postgresql://smartspd_user:password@postgres:5432/smartspd
       REDIS_URL: redis://redis:6379
       
       # Neo4j (Optional)
@@ -156,6 +162,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000}
+    env_file:
+      - .env.prod
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:

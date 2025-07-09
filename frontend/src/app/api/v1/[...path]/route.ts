@@ -27,13 +27,13 @@ async function proxyRequest(req: NextRequest, path: string[], method: string) {
     
     if (process.env.NODE_ENV === 'production') {
       // Production: use internal Docker service name
-      backendUrl = `http://backend:8000/api/v1/${path.join('/')}`;
+      backendUrl = `http://backend:8000/api/v1/${path.join('/')}/`;
     } else if (process.env.CODESPACE_NAME) {
       // GitHub Codespace: use internal localhost (frontend runs in same environment)
-      backendUrl = `http://localhost:8001/api/v1/${path.join('/')}`;
+      backendUrl = `http://localhost:8000/api/v1/${path.join('/')}/`;
     } else {
       // Local development: use localhost
-      backendUrl = `http://localhost:8001/api/v1/${path.join('/')}`;
+      backendUrl = `http://localhost:8000/api/v1/${path.join('/')}/`;
     }
     
     const url = new URL(req.url);

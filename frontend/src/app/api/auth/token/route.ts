@@ -4,8 +4,10 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
     
-    // Direct connection to backend (bypassing problematic proxy)
-    const response = await fetch('http://localhost:8001/api/v1/auth/login', {
+    // Direct connection to backend (server-side call within Docker network)
+    const backendUrl = 'http://backend:8000';
+    console.log('Using backend URL:', backendUrl);
+    const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

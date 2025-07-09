@@ -40,24 +40,28 @@ export default function DashboardPage() {
     const fetchDashboardStats = async () => {
       try {
         setLoading(true);
-        // For now, simulate API call with test data since analytics endpoint is disabled
-        setTimeout(() => {
-          setStats({
-            active_conversations: 12,
-            documents_processed: 45,
-            active_users: 8,
-            avg_response_time: "1.2s",
-            total_queries_today: 156,
-            success_rate: 94.5,
-            user_satisfaction: 4.7,
-            recent_activity: [
-              { action: "Document Upload", description: "New SPD document processed", time: "2 minutes ago" },
-              { action: "User Query", description: "Member question about deductibles", time: "5 minutes ago" },
-              { action: "System Update", description: "Backend health check completed", time: "10 minutes ago" }
-            ]
-          });
+        const token = localStorage.getItem('auth_token');
+        
+        if (!token) {
+          setError('No authentication token found');
           setLoading(false);
-        }, 500);
+          return;
+        }
+
+        const response = await fetch('/api/v1/analytics/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setStats(data);
+        setLoading(false);
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);
         setError('Failed to load dashboard data');

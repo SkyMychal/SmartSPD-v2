@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Upload, History, Download, Trash2, Eye, MoreHorizontal, Filter, Search } from 'lucide-react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, healthPlanApi } from '@/lib/api';
 
 interface Document {
   id: string;
@@ -80,15 +80,8 @@ export default function DocumentsPage() {
   
   const fetchHealthPlans = async () => {
     try {
-      // Use the API client instead of direct fetch
-      const { apiClient } = await import('@/lib/api-client');
-      const response = await apiClient.healthPlans.getHealthPlans({ active_only: true });
-      
-      if (response.error) {
-        console.error('Health Plans API error:', response.error);
-      } else {
-        setHealthPlans(response.data.health_plans || []);
-      }
+      const response = await healthPlanApi.getHealthPlans();
+      setHealthPlans(response.health_plans || []);
     } catch (error) {
       console.error('Failed to fetch health plans:', error);
     }
@@ -111,78 +104,14 @@ export default function DocumentsPage() {
 
       const response = await documentApi.getDocuments(params);
       
-      if (response.error) {
-        console.warn('Documents API error:', response.error);
-        // Use mock data when API fails
-        const mockDocuments: DocumentList = {
-          documents: [
-            {
-              id: '1',
-              filename: 'health_benefits_spd_2024.pdf',
-              document_type: 'spd',
-              file_size: 2457600, // 2.4 MB
-              processing_status: 'completed',
-              health_plan_id: 'plan-1',
-              created_at: '2024-01-15T10:30:00Z',
-              updated_at: '2024-01-15T10:45:00Z',
-              metadata: { pages: 45, language: 'en' }
-            },
-            {
-              id: '2',
-              filename: 'benefits_comparison_2024.xlsx',
-              document_type: 'bps',
-              file_size: 1234567, // 1.2 MB
-              processing_status: 'completed',
-              health_plan_id: 'plan-1',
-              created_at: '2024-01-10T14:20:00Z',
-              updated_at: '2024-01-10T14:25:00Z',
-              metadata: { sheets: 3, rows: 150 }
-            },
-            {
-              id: '3',
-              filename: 'prescription_coverage.pdf',
-              document_type: 'spd',
-              file_size: 987654, // 964 KB
-              processing_status: 'processing',
-              health_plan_id: 'plan-2',
-              created_at: '2024-01-05T09:15:00Z',
-              updated_at: '2024-01-05T09:15:00Z',
-              metadata: { pages: 12 }
-            }
-          ],
-          total: 3,
-          page: page,
-          size: 20
-        };
-        setDocuments(mockDocuments);
-        setError(null);
-      } else {
-        setDocuments(response.data);
-        setError(null);
-      }
+      setDocuments(response);
+      setError(null);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
-      setError('Failed to load documents. Using demo data.');
+      setError('Failed to load documents. Please check your connection and try again.');
       
-      // Fallback mock data
-      const fallbackDocuments: DocumentList = {
-        documents: [
-          {
-            id: 'demo-1',
-            filename: 'demo_health_plan.pdf',
-            document_type: 'spd',
-            file_size: 1500000,
-            processing_status: 'completed',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            metadata: { pages: 25 }
-          }
-        ],
-        total: 1,
-        page: 1,
-        size: 20
-      };
-      setDocuments(fallbackDocuments);
+      // Show empty state instead of mock data
+      setDocuments({ documents: [], total: 0, page: 1, size: 20 });
     } finally {
       setLoading(false);
     }
@@ -210,31 +139,17 @@ export default function DocumentsPage() {
       
       // Create new health plan first
       try {
-        const response = await fetch('/api/v1/health-plans/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          },
-          body: JSON.stringify({
-            name: newHealthPlan.name,
-            group_id: newHealthPlan.group_id,
-            plan_year: newHealthPlan.plan_year,
-            effective_date: newHealthPlan.effective_date,
-            termination_date: newHealthPlan.termination_date || null,
-            plan_type: 'Group Health Plan'
-          })
+        const createdPlan = await healthPlanApi.createHealthPlan({
+          name: newHealthPlan.name,
+          group_id: newHealthPlan.group_id,
+          plan_year: newHealthPlan.plan_year,
+          effective_date: newHealthPlan.effective_date,
+          termination_date: newHealthPlan.termination_date || null,
+          plan_type: 'Group Health Plan'
         });
         
-        if (response.ok) {
-          const createdPlan = await response.json();
-          healthPlanId = createdPlan.id;
-          await fetchHealthPlans(); // Refresh health plans list
-        } else {
-          const error = await response.text();
-          setError(`Failed to create health plan: ${error}`);
-          return;
-        }
+        healthPlanId = createdPlan.id;
+        await fetchHealthPlans(); // Refresh health plans list
       } catch (error) {
         console.error('Failed to create health plan:', error);
         setError('Failed to create health plan');
@@ -283,14 +198,8 @@ export default function DocumentsPage() {
         });
 
         // Handle upload response
-        if (response.error || !response.data) {
-          console.error(`Upload failed for ${file.name}:`, response.error);
-          setError(`Upload failed for ${file.name}: ${response.error}`);
-          
-          // Clear error message after 5 seconds
-          setTimeout(() => setError(null), 5000);
-        } else {
-          // If real API response, refresh documents list
+        if (response) {
+          // Successful upload, refresh documents list
           await fetchDocuments();
           setSuccess(`Successfully uploaded: ${file.name}`);
           setTimeout(() => setSuccess(null), 3000);
@@ -740,10 +649,9 @@ function DocumentRow({
 
   const handleView = async () => {
     try {
-      const { documentApi } = await import('@/lib/api-client');
-      const response = await documentApi.getDocumentDownload(document.id);
-      if (response.data) {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+      const response = await documentApi.downloadDocument(document.id);
+      if (response) {
+        const url = window.URL.createObjectURL(new Blob([response]));
         window.open(url, '_blank');
       } else {
         alert('Failed to get document for viewing.');
@@ -796,8 +704,7 @@ function DocumentRow({
                   className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-blue-600"
                   onClick={async () => {
                     try {
-                      const { apiClient } = await import('@/lib/api-client');
-                      await apiClient.documents.processDocument(document.id);
+                      await documentApi.reprocessDocument(document.id);
                       
                       // Different messages based on document type
                       const processType = document.document_type === 'spd' ? 'RAG chunking' : 'knowledge graph';

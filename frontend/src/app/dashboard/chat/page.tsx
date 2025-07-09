@@ -83,36 +83,10 @@ export default function ChatPage() {
       const response = await apiClient.healthPlans.getHealthPlans({ active_only: true });
       
       if (response.error) {
-        console.warn('Health Plans API error, using mock data:', response.error);
-        // Mock health plans when backend is not available
-        const mockHealthPlans: HealthPlan[] = [
-          {
-            id: 'plan-1',
-            name: 'Standard PPO Plan',
-            plan_number: 'PPO-2024-001',
-            plan_year: 2024,
-            plan_type: 'PPO',
-            is_active: true
-          },
-          {
-            id: 'plan-2', 
-            name: 'High Deductible Health Plan',
-            plan_number: 'HDHP-2024-002',
-            plan_year: 2024,
-            plan_type: 'HDHP',
-            is_active: true
-          },
-          {
-            id: 'plan-3',
-            name: 'HMO Basic Plan',
-            plan_number: 'HMO-2024-003',
-            plan_year: 2024,
-            plan_type: 'HMO',
-            is_active: true
-          }
-        ];
-        setHealthPlans(mockHealthPlans);
-        setSelectedHealthPlan(mockHealthPlans[0].id);
+        console.warn('Health Plans API error:', response.error);
+        // Show empty state instead of mock data
+        setHealthPlans([]);
+        setError('Unable to load health plans. Please try again.');
       } else {
         // Real backend response
         setHealthPlans(response.data.health_plans || []);
@@ -122,19 +96,9 @@ export default function ChatPage() {
       }
     } catch (err) {
       console.error('Failed to load health plans:', err);
-      // Fallback to mock data
-      const mockHealthPlans: HealthPlan[] = [
-        {
-          id: 'plan-1',
-          name: 'Demo Health Plan',
-          plan_number: 'DEMO-2024-001',
-          plan_year: 2024,
-          plan_type: 'PPO',
-          is_active: true
-        }
-      ];
-      setHealthPlans(mockHealthPlans);
-      setSelectedHealthPlan(mockHealthPlans[0].id);
+      // Show empty state instead of mock data
+      setHealthPlans([]);
+      setError('Failed to load health plans. Please check your connection and try again.');
     } finally {
       setLoadingHealthPlans(false);
     }
@@ -142,36 +106,10 @@ export default function ChatPage() {
 
   const loadChatSessions = async () => {
     try {
-      // Mock chat sessions data
-      const mockSessions: ChatSession[] = [
-        {
-          id: '1',
-          title: 'Healthcare Coverage Questions',
-          created_at: new Date(),
-          messages: [
-            {
-              id: '1',
-              type: 'user',
-              content: 'What is my annual deductible for medical services?',
-              timestamp: new Date()
-            },
-            {
-              id: '2',
-              type: 'assistant',
-              content: 'Based on your current health plan, your annual deductible for medical services is $1,500 for individual coverage. This means you\'ll need to pay the first $1,500 of covered medical expenses before your insurance begins to pay.',
-              timestamp: new Date(),
-              sources: ['SPD Document - Section 4.2', 'Benefits Summary'],
-              confidence: 0.95
-            }
-          ]
-        }
-      ];
-      
-      setSessions(mockSessions);
-      if (mockSessions.length > 0) {
-        setCurrentSession(mockSessions[0]);
-        setMessages(mockSessions[0].messages);
-      }
+      // Start with empty sessions - no mock data
+      setSessions([]);
+      setCurrentSession(null);
+      setMessages([]);
     } catch (err) {
       console.error('Failed to load chat sessions:', err);
       setError('Failed to load chat history');
